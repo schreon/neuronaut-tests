@@ -42,7 +42,7 @@ nosetests.xml
 .env
 
 # data
-test/data/*
+data/*
 
 *.pik
 *.*~
