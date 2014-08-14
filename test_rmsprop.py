@@ -15,9 +15,9 @@ from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
 from neuro.training import FullBatchTrainer, SGDTrainer
 from neuro.weightdecay import Renormalize
-from test.test_base import AbaloneBaseTest
 from neuro.dropout import Dropout
 
+from test_base import AbaloneBaseTest
 
 logging.basicConfig(level=logging.INFO)
 class Test(AbaloneBaseTest):    

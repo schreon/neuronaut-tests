@@ -4,7 +4,7 @@ Created on Jul 23, 2014
 @author: schreon
 '''
 import logging
-from test import abalone
+import abalone
 import unittest
 
 import numpy
@@ -52,32 +52,27 @@ class Test(unittest.TestCase):
                                  FeedForwardNeuralNetwork,
                                  Regression,
                                  NaNMask,
-                                 DropoutNetwork,
-                                 # LWTANetwork,
                                  )
         network_args = dict(context=ctx, input_shape=inp.shape[1])
                  
-        MyTrainer = neuro.create("Benchmark", 
+        MyTrainer = neuro.create("MyTrainer", 
                                  FullBatchTrainer, 
                                  Backpropagation, 
                                  EarlyStopping, 
-                                 RMSProp, 
-                                 Renormalize,
-                                 #Dropout
+                                 RPROP, 
+                                 Renormalize
                                  )
-        trainer_args = dict(min_steps=30000,
+        trainer_args = dict(min_steps=1000,
                             validation_frequency=5, # validate the model every 5 steps
                             validate_train=True, # also validate on training set
                             logging_frequency=2.0, # log progress every 2 seconds
-                            max_weight_size=3.0,
+                            max_weight_size=15.0,
                             max_step_size=0.01
-                            #minibatch_size=128
                             )
         
         network_structure = [
-           dict(num_units=384, function=ctx.softplus, derivative=ctx.softplus_derivative, lwta=2, dropout=0.5),
-           dict(num_units=384, function=ctx.softplus, derivative=ctx.softplus_derivative, lwta=2, dropout=0.5),
-           dict(num_units=384, function=ctx.softplus, derivative=ctx.softplus_derivative, lwta=2, dropout=0.5),
+           dict(num_units=64, function=ctx.softplus, derivative=ctx.softplus_derivative),
+           dict(num_units=64, function=ctx.softplus, derivative=ctx.softplus_derivative),
            dict(num_units=targ.shape[1], function=ctx.linear, derivative=ctx.linear_derivative)
         ]
         
@@ -91,7 +86,7 @@ class Test(unittest.TestCase):
           network_structure=network_structure
           )
 
-        evaluator.evaluate(num_evaluations=1000, file_name="data/Benchmark.pik")
+        evaluator.evaluate(num_evaluations=1, file_name="data/Abalone-Test.pik")
 
 
 if __name__ == "__main__":

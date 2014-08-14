@@ -3,7 +3,7 @@ Created on Jul 9, 2014
 
 @author: schreon
 '''
-from test import abalone
+import abalone
 import unittest
 
 from matplotlib import pyplot as plt
@@ -53,11 +53,11 @@ class AbaloneBaseTest(unittest.TestCase):
         self.patterns = ctx.upload(inp, targ, inp_test, targ_test)
         self.minimum, self.maximum = minimum, maximum
         
-        MyNetwork = neuro.create("MyNetwork", FeedForwardNeuralNetwork, Regression, NaNMask, DropoutNetwork)
+        MyNetwork = neuro.create("MyNetwork", FeedForwardNeuralNetwork, Regression, NaNMask)
         net = MyNetwork(context=ctx, input_shape=inp.shape[1], seed=1234)
  
-        net.add_layer(128, ctx.logistic, ctx.logistic_derivative, dropout=0.5)
-        net.add_layer(128, ctx.logistic, ctx.logistic_derivative, dropout=0.5)
+        net.add_layer(64, ctx.logistic, ctx.logistic_derivative, dropout=0.5)
+        net.add_layer(64, ctx.logistic, ctx.logistic_derivative, dropout=0.5)
         net.add_layer(1, ctx.logistic, ctx.logistic_derivative)
         net.reset_weights(std=0.01)
         

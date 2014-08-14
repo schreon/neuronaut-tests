@@ -15,6 +15,9 @@ log = logging.getLogger("abalone dataset")
 def _download_file(url, file_name):
     import urllib2
     u = urllib2.urlopen(url)
+    dirname = os.path.dirname(file_name)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
     f = open(file_name, 'wb')
     meta = u.info()
     file_size = int(meta.getheaders("Content-Length")[0])
@@ -43,15 +46,15 @@ def _load(path, file_name):
 
 def get_patterns():
     abalone_pik = os.path.join('data', 'abalone.pik')
-    #if not os.path.exists(abalone_pik):
-    if True:
+    if not os.path.exists(abalone_pik):
         log.info("creating pickle file")
         # make sure the abalone files are present
         _load(os.path.join('data'), 'abalone.data')
         
         patterns = []
         sexmap = {'M': 0.0, 'I' : 0.5, 'F': 1.0}
-        with open(os.path.join('data', 'abalone.data')) as f:
+        filename = os.path.join('data', 'abalone.data')
+        with open(filename) as f:
             lines = f.readlines()
             for line in lines:
                 values = line.split(",")

@@ -16,7 +16,7 @@ from neuro.sarprop import SARPROP
 from neuro.stopping import EarlyStopping
 from neuro.training import FullBatchTrainer
 from neuro.weightdecay import Renormalize
-from test.test_base import AbaloneBaseTest
+from test_base import AbaloneBaseTest
 
 
 logging.basicConfig(level=logging.INFO)

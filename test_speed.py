@@ -40,7 +40,7 @@ class Test(unittest.TestCase):
             ctx.dot(a, b, c)
         ctx.synchronize()
         
-        num_steps = 1000
+        num_steps = 20
         ctx.synchronize()    
         start_time = time.time()                
         for _ in xrange(num_steps):
@@ -52,10 +52,6 @@ class Test(unittest.TestCase):
         num_ops = 2 * m*n*k
         gflops = 1.0e-9 * num_ops * num_steps / (current_time - start_time)                                
         logging.info("matrix multiplications / second: %.4f, gflops: %.4f" % (steps_per_sec, gflops))
-         
-        ref = numpy.dot(a_cpu, b_cpu)
-        assert_almost_equal(c.get(), ref, decimal=2)
-        logging.info("result is okay to at least 2 decimals")
          
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testSpeed']
