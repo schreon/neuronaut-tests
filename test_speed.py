@@ -1,8 +1,3 @@
-'''
-Created on Jul 24, 2014
-
-@author: schreon
-'''
 import logging
 import time
 import unittest
@@ -10,7 +5,7 @@ import unittest
 import numpy
 from reikna import cluda
 
-from neuro import OpenClContext
+from neuro.opencl import OpenClContext
 import neuro
 from neuro.cuda import CUDAContext
 from numpy.testing import assert_almost_equal
@@ -21,7 +16,7 @@ class Test(unittest.TestCase):
 
 
     def testSpeed(self):
-        ctx = neuro.create("MyContext", CUDAContext)(num_workers=0) 
+        ctx = neuro.create("MyContext", OpenClContext)() 
         n = 1024
         m = 48
         k = 51200
@@ -34,17 +29,20 @@ class Test(unittest.TestCase):
         c_cpu = numpy.random.randn(n,m).astype(numpy.float32)
         c = ctx.upload(c_cpu)  
         
+        d = numpy.random.randn(1,1).astype(numpy.float32)
+        d = ctx.upload(d)
+        
         ctx.synchronize()
         # warmup
         for _ in range(5):        
             ctx.dot(a, b, c)
         ctx.synchronize()
-        
-        num_steps = 20
+
+        num_steps = 200
         ctx.synchronize()    
         start_time = time.time()                
         for _ in xrange(num_steps):
-            ctx.dot(a, b, c)                          
+            ctx.dot(a, b, c) 
         ctx.synchronize()      
         current_time = time.time() 
                      

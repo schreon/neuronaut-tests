@@ -1,8 +1,3 @@
-'''
-Created on Jul 23, 2014
-
-@author: schreon
-'''
 import logging
 import abalone
 import unittest
