@@ -1,9 +1,4 @@
 import logging
-import abalone
-import unittest
-
-import numpy
-
 import neuro
 from neuro.backpropagation import Backpropagation
 from neuro.cuda import CUDAContext
@@ -17,6 +12,12 @@ from neuro.sarprop import SARPROP
 from neuro.stopping import EarlyStopping
 from neuro.training import FullBatchTrainer, SGDTrainer
 from neuro.weightdecay import Renormalize
+from neuro.model import DenseLayer, LogisticLayer, LinearLayer
+import unittest
+
+import numpy
+
+import abalone
 
 
 logging.basicConfig(level=logging.INFO)
@@ -55,15 +56,18 @@ class Test(unittest.TestCase):
                                  Regression,
                                  NaNMask,
                                  )
-
+    
+        LogisticLayerClass = neuro.create("LogLayer", DenseLayer, LogisticLayer)
+        LinearLayerClass = neuro.create("LinLayer", DenseLayer, LinearLayer)
+        
         # Next, we must specify the structure of the neural network.
         # Here, we use 2 hidden layers with the logistic activation function
         # and an output layer with linear units.
         network_structure = [
            dict(num_units=inp.shape[1]),
-           dict(num_units=64, function=ctx.logistic, derivative=ctx.logistic_derivative),
-           dict(num_units=64, function=ctx.logistic, derivative=ctx.logistic_derivative),
-           dict(num_units=targ.shape[1], function=ctx.linear, derivative=ctx.linear_derivative)
+           dict(num_units=64, LayerClass=LogisticLayerClass),
+           dict(num_units=64, LayerClass=LogisticLayerClass),
+           dict(num_units=targ.shape[1], LayerClass=LinearLayerClass)
         ]
 
         # To train the network, we also need a Trainer class.
