@@ -5,7 +5,7 @@ import unittest
 import numpy
 from reikna import cluda
 
-from neuro.opencl import OpenClContext
+from neuro.cuda import CUDAContext
 import neuro
 from neuro.cuda import CUDAContext
 from numpy.testing import assert_almost_equal
@@ -16,10 +16,10 @@ class Test(unittest.TestCase):
 
 
     def testSpeed(self):
-        ctx = neuro.create("MyContext", OpenClContext)() 
+        ctx = neuro.create("MyContext", CUDAContext)()
         n = 1024
-        m = 48
-        k = 51200
+        m = 1024
+        k = 1024
         logging.info(m)
         
         a_cpu = numpy.random.randn(n,k).astype(numpy.float32)
