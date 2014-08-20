@@ -50,3 +50,7 @@ class Test(unittest.TestCase):
 
         state = trainer.TrainingState(network=net, size=32)
         trainer.train(state, None, inp, targ, None, None)
+
+        # TODO: implement convolution
+        # TODO: implement classification output
+        # TODO: implement maxpooling
