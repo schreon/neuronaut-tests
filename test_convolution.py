@@ -25,6 +25,9 @@ class Test(unittest.TestCase):
         ctx = neuro.create("MyContext", CUDAContext)()
 
         inp, targ, inpt, targt = ctx.upload(*mnist.get_patterns())
+        logging.info(inp.shape)
+        logging.info(targ.shape)
+
         NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork)
 
         net = NetworkClass(context=ctx, input_shape=(28,28))
@@ -37,7 +40,7 @@ class Test(unittest.TestCase):
         net.add_layer(LayerClass=ConvLayer, num_units=16)
         net.add_layer(LayerClass=MPLayer)
         net.add_layer(LayerClass=ConvLayer, num_units=16)
-        net.add_layer(LayerClass=LogisticDense, num_units=1)
+        net.add_layer(LayerClass=LogisticDense, num_units=10)
 
         TrainerClass = neuro.create("MyTrainer",
                                  SGDTrainer,
