@@ -158,16 +158,11 @@ def get_patterns():
         inputs_test, targets_test = mndata.load_testing()
 
         # normalize by maximum
-        divider = numpy.max(inputs, axis=0)
-        divider[divider == 0.0] = 1.0  # avoid nans
-        inputs = (inputs / divider).astype(numpy.float32)
+        inputs = numpy.array(inputs).astype(numpy.float32) / 255.0
+        inputs_test =  numpy.array(inputs_test).astype(numpy.float32) / 255.0
 
-        divider = numpy.max(inputs_test, axis=0)
-        divider[divider == 0.0] = 1.0  # avoid nans
-        inputs_test = (inputs_test / divider).astype(numpy.float32)
-
-        targets = numpy.array(targets, dtype=numpy.int).ravel()
-        targets_test = numpy.array(targets_test, dtype=numpy.int).ravel()
+        targets = numpy.array(targets, dtype=numpy.int32).ravel()
+        targets_test = numpy.array(targets_test, dtype=numpy.int32).ravel()
 
         # shuffle inputs heavily
         _shuffle_in_unison(inputs, targets)
@@ -181,7 +176,7 @@ def get_patterns():
         log.info("loading from pickle file")
         inputs, targets, inputs_test, targets_test = cPickle.load(open(mnist_pik, "rb"))
 
-    return inputs, targets, inputs_test, targets_test
+    return inputs, targets.astype(numpy.int32), inputs_test, targets_test.astype(numpy.int32)
 
 if __name__ == "__main__":
     log.info("mnist standalone download")

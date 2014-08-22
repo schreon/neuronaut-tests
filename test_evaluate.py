@@ -18,6 +18,7 @@ import unittest
 import numpy
 
 import abalone
+import os
 
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,7 @@ class Test(unittest.TestCase):
 
 
     def testEvaluate(self):
+        logging.info(os.environ['PATH'])
         # First, choose whether CUDA or OpenCL should be used as backend.
         # In this example we stick to the CUDAContext. But you can just
         # swap that with OpenCLContext.

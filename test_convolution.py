@@ -2,6 +2,7 @@ import logging
 import unittest
 
 from neuro.backpropagation import Backpropagation
+from neuro.classification import Classification
 
 from neuro.convolution import Convolution2DLayer
 from neuro.maxpool import Maxpool2DLayer
@@ -14,6 +15,7 @@ from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
 from neuro.model import DenseLayer
 import mnist
+import os
 
 
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +30,7 @@ class Test(unittest.TestCase):
         logging.info(inp.shape)
         logging.info(targ.shape)
 
-        NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork)
+        NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork, Classification)
 
         net = NetworkClass(context=ctx, input_shape=(28,28))
 

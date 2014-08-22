@@ -78,5 +78,6 @@ def get_patterns():
         
     inputs = patterns[:, :-1].astype(numpy.float32)
     targets = patterns[:, -1:].astype(numpy.float32)
-    
-    return inputs, targets, minimum, maximum
+
+    n = int(0.5*inputs.shape[0])
+    return inputs[:n], targets[:n], inputs[n:], targets[n:]
