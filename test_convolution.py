@@ -7,7 +7,8 @@ import numpy
 from neuro.backpropagation import Backpropagation
 from neuro.classification import Classification, ClassificationTrainer
 
-from neuro.convolution import Convolution2DLayer, convolve, get_output_shape
+from neuro.convolution import Convolution2DLayer, get_output_shape, convolve2d_propagation, convolve2d_backprop, \
+    convolve2d_gradient
 from neuro.maxpool import Maxpool2DLayer
 
 from neuro.model import FeedForwardNeuralNetwork, LogisticLayer
@@ -252,7 +253,7 @@ class Test(unittest.TestCase):
         logging.info(prev_deltas.shape)
         gradient_intermediate = numpy.zeros(get_output_shape(prev_deltas, deltas, 'gradient'))
         logging.info(gradient_intermediate.shape)
-        gradient = gradient_intermediate.sum(axis=0)
+        gradient = gradient_intermediate.sum(axis=0).sum(axis=0).sum(axis=0)
         logging.info(gradient.shape)
         assert gradient.shape == weights.shape
         logging.info("---------------")
@@ -261,5 +262,25 @@ class Test(unittest.TestCase):
         arrays = (inputs, weights, activations_intermediate, activations, deltas, deltas_intermediate, prev_deltas, gradient_intermediate, gradient)
         inputs, weights, activations_intermediate, activations, deltas, deltas_intermediate, prev_deltas, gradient_intermediate, gradient = ctx.upload(*arrays)
 
-        # TODO: in the propagation case, weights are shared. in the delta case not!
-        # convolve deltas over inputs, mode, resulting in prev_deltas
+        def step():
+            convolve2d_propagation(ctx, inputs, weights, activations_intermediate)
+            ctx.sum(activations_intermediate, activations, axis=1)
+            convolve2d_backprop(ctx, deltas, weights, deltas_intermediate)
+            ctx.sum(deltas_intermediate, prev_deltas, axis=2)
+            convolve2d_gradient(ctx, prev_deltas, deltas, gradient_intermediate)
+            # sum over images and the delta field
+            ctx.sum(gradient_intermediate, gradient, axis=(0,1,2))
+
+        num_steps = 100
+        # warmup
+        ctx.synchronize()
+        for _ in range(5):
+            step()
+        ctx.synchronize()
+        start_time = time.time()
+        for _ in xrange(num_steps):
+            step()
+        ctx.synchronize()
+        current_time = time.time()
+        steps_per_sec = n*num_steps / (current_time - start_time)
+        logging.info("GPU: backprops / second: %.4f, msec / backprops: %.4f" % (steps_per_sec,1000.0 / steps_per_sec))
