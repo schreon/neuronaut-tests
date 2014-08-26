@@ -1,6 +1,6 @@
 import logging
 import neuro
-from neuro.backpropagation import Backpropagation
+from neuro.backpropagation import BackpropagationTrainer
 from neuro.cuda import CUDAContext
 from neuro.dropout import Dropout, DropoutNetwork
 from neuro.evaluate import ConfigurationEvaluator
@@ -83,7 +83,7 @@ class Test(unittest.TestCase):
         # of each neuron.
         TrainerClass = neuro.create("MyTrainer", 
                                  FullBatchTrainer, 
-                                 Backpropagation, 
+                                 BackpropagationTrainer,
                                  EarlyStopping, 
                                  RPROP, 
                                  Renormalize

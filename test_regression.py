@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from neuro.backpropagation import Backpropagation
+from neuro.backpropagation import BackpropagationTrainer
 
 from neuro.model import FeedForwardNeuralNetwork, LogisticLayer, Regression
 import neuro
@@ -38,7 +38,7 @@ class Test(unittest.TestCase):
 
         TrainerClass = neuro.create("MyTrainer",
                                  SGDTrainer,
-                                 Backpropagation,
+                                 BackpropagationTrainer,
                                  EarlyStopping,
                                  RMSProp
                                  )

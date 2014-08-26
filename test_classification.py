@@ -1,20 +1,22 @@
 import logging
 import unittest
+from neuro.history import History
 from neuro.rprop import RPROP
 from neuro.softmax import SoftmaxLayer
 from neuro.weightdecay import Renormalize
 import numpy
 
-from neuro.backpropagation import Backpropagation
-from neuro.classification import Classification, classification_delta_kernel, class_errors, ClassificationTrainer
+from neuro.backpropagation import BackpropagationTrainer
+from neuro.classification import ClassificationNetwork, classification_delta_kernel, class_errors
 
-from neuro.model import FeedForwardNeuralNetwork, LogisticLayer, NaNMask
+from neuro.model import FeedForwardNeuralNetwork, NaNMask
+from neuro.logistic import LogisticLayer
 import neuro
 from neuro.cuda import CUDAContext
-from neuro.training import SGDTrainer, FullBatchTrainer
+from neuro.training import SGDTrainer, FullBatchTrainer, Trainer
 from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
-from neuro.model import DenseLayer
+from neuro.dense import DenseLayer
 import mnist
 import os
 
@@ -28,7 +30,7 @@ class Test(unittest.TestCase):
         ctx = neuro.create("MyContext", CUDAContext)()
 
         out = numpy.zeros((5,10), dtype=numpy.float32)
-        err = numpy.zeros((5,10), dtype=numpy.int32)
+        err = numpy.zeros((5,), dtype=numpy.int32)
         tar = numpy.zeros((5,), dtype=numpy.int32)
         tar[0] = 1
         error = numpy.zeros((1,), dtype=numpy.int32)
@@ -41,36 +43,30 @@ class Test(unittest.TestCase):
 
 
     def testClassification(self):
-        ctx = neuro.create("MyContext", CUDAContext)()
+        ctx = CUDAContext()
 
         inp, targ, inpt, targt = ctx.upload(*mnist.get_patterns())
         assert inp.dtype == inpt.dtype == numpy.float32
         assert targ.dtype == targt.dtype == numpy.int32
 
-        NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork, Classification)
+        class MyNetwork(ClassificationNetwork, FeedForwardNeuralNetwork):
+            pass
 
-        net = NetworkClass(context=ctx, input_shape=(784,))
+        net = MyNetwork(context=ctx, input_shape=(784,))
 
-        LogisticDense = neuro.create("MyDenseLayer", DenseLayer, LogisticLayer)
-        SoftmaxDense = neuro.create("MySoftMaxLayer", DenseLayer, SoftmaxLayer)
+        class LogisticDenseLayer(LogisticLayer, DenseLayer):
+            pass
 
-        net.add_layer(LayerClass=LogisticDense, num_units=512)
-        net.add_layer(LayerClass=LogisticDense, num_units=256)
-        net.add_layer(LayerClass=SoftmaxDense, num_units=10)
+        class SoftmaxDenseLayer(SoftmaxLayer, DenseLayer):
+            pass
 
+        net.add_layer(LogisticDenseLayer, num_units=512)
+        net.add_layer(LogisticDenseLayer, num_units=256)
+        net.add_layer(SoftmaxDenseLayer, num_units=10)
 
-        TrainerClass = neuro.create("MyTrainer",
-                                 SGDTrainer,
-                                 ClassificationTrainer,
-                                 Backpropagation,
-                                 EarlyStopping,
-                                 RMSProp
-                                 )
+        class MyTrainer(RMSProp, EarlyStopping, BackpropagationTrainer, History, SGDTrainer):
+            pass
 
-        trainer = TrainerClass(network=net)
-
-        state = trainer.TrainingState(network=net, size=128)
-        test_state = trainer.TestState(network=net, size=inpt.shape[0])
-
-        net.reset_weights()
-        trainer.train(state, test_state, inp, targ, inpt, targt)
+        trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt))
+        net.reset()
+        trainer.train()

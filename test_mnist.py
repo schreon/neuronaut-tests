@@ -13,7 +13,7 @@ from neuro.model import DenseLayer, LogisticLayer
 from neuro.convolution import Convolution2DLayer
 from neuro.maxpool import Maxpool2DLayer
 from neuro.training import SGDTrainer
-from neuro.backpropagation import Backpropagation
+from neuro.backpropagation import BackpropagationTrainer
 from neuro.stopping import EarlyStopping
 from neuro.rmsprop import RMSProp
 
@@ -48,7 +48,7 @@ class Test(unittest.TestCase):
         
         TrainerClass = neuro.create("MyTrainer", 
                          SGDTrainer, 
-                         Backpropagation, 
+                         BackpropagationTrainer,
                          EarlyStopping, 
                          RMSProp
                          )
