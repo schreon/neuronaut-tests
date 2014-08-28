@@ -1,24 +1,26 @@
 import logging
 import unittest
 import time
+from neuro.classification import ClassificationNetwork
+from neuro.dense import DenseLayer
+from neuro.history import History
+from neuro.logistic import LogisticLayer
 from scipy import signal
 import numpy
 
 from neuro.backpropagation import BackpropagationTrainer
-from neuro.classification import Classification, ClassificationTrainer
 
 from neuro.convolution import Convolution2DLayer, get_output_shape, convolve2d_propagation, convolve2d_backprop, \
     convolve2d_gradient
 from neuro.maxpool import Maxpool2DLayer
 
-from neuro.model import FeedForwardNeuralNetwork, LogisticLayer
+from neuro.model import FeedForwardNeuralNetwork
 import neuro
 from neuro.cuda import CUDAContext
 from neuro.softmax import SoftmaxLayer
 from neuro.training import SGDTrainer
 from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
-from neuro.model import DenseLayer
 import mnist
 from numpy.testing import assert_almost_equal
 import os
@@ -36,43 +38,30 @@ class Test(unittest.TestCase):
         assert inp.dtype == inpt.dtype == numpy.float32
         assert targ.dtype == targt.dtype == numpy.int32
 
-        NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork, Classification)
+        NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork, ClassificationNetwork)
 
-        net = NetworkClass(context=ctx, input_shape=(28,28))
+        net = NetworkClass(context=ctx, input_shape=(1,28,28))
 
         ConvLayer = neuro.create("MyConvLayer", Convolution2DLayer, LogisticLayer)
         MPLayer = neuro.create("MyMaxpool", Maxpool2DLayer)
         LogisticDense = neuro.create("MyDenseLayer", DenseLayer, LogisticLayer)
         SoftmaxDense = neuro.create("MySoftMaxLayer", DenseLayer, SoftmaxLayer)
 
-        net.add_layer(LayerClass=ConvLayer, num_units=16)
-        net.add_layer(LayerClass=MPLayer)
-        net.add_layer(LayerClass=ConvLayer, num_units=16)
-        net.add_layer(LayerClass=MPLayer)
-        net.add_layer(LayerClass=ConvLayer, num_units=16)
-        net.add_layer(LayerClass=LogisticDense, num_units=256)
-        net.add_layer(LayerClass=SoftmaxDense, num_units=10)
+        net.add_layer(ConvLayer, num_units=16)
+        net.add_layer(MPLayer)
+        net.add_layer(ConvLayer, num_units=16)
+        net.add_layer(MPLayer)
+        net.add_layer(ConvLayer, num_units=16)
+        net.add_layer(LogisticDense, num_units=256)
+        net.add_layer(SoftmaxDense, num_units=10)
 
 
-        TrainerClass = neuro.create("MyTrainer",
-                                 SGDTrainer,
-                                 ClassificationTrainer,
-                                 BackpropagationTrainer,
-                                 EarlyStopping,
-                                 RMSProp
-                                 )
+        class MyTrainer(RMSProp, EarlyStopping, BackpropagationTrainer, History, SGDTrainer):
+            pass
 
-        trainer = TrainerClass(network=net)
-
-        state = trainer.TrainingState(network=net, size=128)
-        test_state = trainer.TestState(network=net, size=inpt.shape[0])
-
-        net.reset_weights()
-        trainer.train(state, test_state, inp, targ, inpt, targt)
-
-        # TODO: implement convolution
-        # TODO: implement classification output
-        # TODO: implement maxpooling
+        trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=None)
+        net.reset()
+        trainer.train()
 
 
     def test_convolution_memory_layout(self):
