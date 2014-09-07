@@ -2,15 +2,19 @@ import logging
 import unittest
 
 from neuro.backpropagation import BackpropagationTrainer
+from neuro.dense import DenseLayer
+from neuro.history import History
+from neuro.logistic import LogisticLayer
 
-from neuro.model import FeedForwardNeuralNetwork, LogisticLayer, Regression
+from neuro.model import FeedForwardNeuralNetwork, RegressionNetwork
 import neuro
 from neuro.cuda import CUDAContext
-from neuro.training import SGDTrainer
+from neuro.rprop import RPROP
+from neuro.training import SGDTrainer, FullBatchTrainer
 from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
-from neuro.model import DenseLayer
 import abalone
+import numpy
 import os
 
 
@@ -26,31 +30,25 @@ class Test(unittest.TestCase):
         logging.info(inp.shape)
         logging.info(targ.shape)
 
-        NetworkClass = neuro.create("MyNetwork", FeedForwardNeuralNetwork, Regression)
+        assert inp.dtype == inpt.dtype == numpy.float32
+        assert targ.dtype == targt.dtype == numpy.float32
 
-        net = NetworkClass(context=ctx, input_shape=(8,))
+        class MyNetwork(RegressionNetwork, FeedForwardNeuralNetwork):
+            pass
 
-        LogisticDense = neuro.create("MyDenseLayer", DenseLayer, LogisticLayer)
+        net = MyNetwork(context=ctx, input_shape=(8,))
 
-        net.add_layer(LayerClass=LogisticDense, num_units=512)
-        net.add_layer(LayerClass=LogisticDense, num_units=256)
-        net.add_layer(LayerClass=LogisticDense, num_units=1)
+        class LogisticDenseLayer(LogisticLayer, DenseLayer):
+            pass
 
-        TrainerClass = neuro.create("MyTrainer",
-                                 SGDTrainer,
-                                 BackpropagationTrainer,
-                                 EarlyStopping,
-                                 RMSProp
-                                 )
 
-        trainer = TrainerClass(network=net)
+        net.add_layer(LogisticDenseLayer, num_units=512)
+        net.add_layer(LogisticDenseLayer, num_units=256)
+        net.add_layer(LogisticDenseLayer, num_units=1)
 
-        state = trainer.TrainingState(network=net, size=128)
-        test_state = trainer.TestState(network=net, size=inpt.shape[0])
+        class MyTrainer(RPROP, EarlyStopping, BackpropagationTrainer, History, FullBatchTrainer):
+            pass
 
-        net.reset_weights()
-        trainer.train(state, test_state, inp, targ, inpt, targt)
-
-        # TODO: implement convolution
-        # TODO: implement classification output
-        # TODO: implement maxpooling
+        trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt))
+        net.reset()
+        trainer.train()
