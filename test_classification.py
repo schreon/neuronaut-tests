@@ -1,24 +1,20 @@
 import logging
 import unittest
+
 from neuro.history import History
-from neuro.rprop import RPROP
-from neuro.softmax import SoftmaxLayer
-from neuro.weightdecay import Renormalize
+from neuro.softmax import Softmax
 import numpy
-
 from neuro.backpropagation import BackpropagationTrainer
-from neuro.classification import ClassificationNetwork, classification_delta_kernel, class_errors
-
-from neuro.model import FeedForwardNeuralNetwork, NaNMask
-from neuro.logistic import LogisticLayer
+from neuro.classification import ClassificationNetwork, class_errors
+from neuro.model import FeedForwardNeuralNetwork
+from neuro.logistic import Logistic
 import neuro
 from neuro.cuda import CUDAContext
-from neuro.training import SGDTrainer, FullBatchTrainer, Trainer
+from neuro.training import SGDTrainer
 from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
 from neuro.dense import DenseLayer
 import mnist
-import os
 
 
 logging.basicConfig(level=logging.INFO)
@@ -54,10 +50,10 @@ class Test(unittest.TestCase):
 
         net = MyNetwork(context=ctx, input_shape=(784,))
 
-        class LogisticDenseLayer(LogisticLayer, DenseLayer):
+        class LogisticDenseLayer(Logistic, DenseLayer):
             pass
 
-        class SoftmaxDenseLayer(SoftmaxLayer, DenseLayer):
+        class SoftmaxDenseLayer(Softmax, DenseLayer):
             pass
 
         net.add_layer(LogisticDenseLayer, num_units=512)
