@@ -12,16 +12,15 @@ from neuro.rprop import RPROPMinus
 from neuro.training import FullBatchTrainer
 from neuro.stopping import EarlyStopping
 import abalone
-from neuro.weightdecay import Renormalize
 import numpy
-from plot_weights import WeightsPlotter, AnimationRender
+from plot_weights import plot_weight_matrix
 
 logging.basicConfig(level=logging.INFO)
 
 class Test(unittest.TestCase):
 
 
-    def testRegression(self):
+    def testPlotWeights(self):
         ctx = CUDAContext()
 
         inp, targ, inpt, targt = ctx.upload(*abalone.get_patterns())
@@ -39,26 +38,17 @@ class Test(unittest.TestCase):
         class LogisticDenseLayer(Logistic, DenseLayer):
             pass
 
-        net.add_layer(LogisticDenseLayer, num_units=8)
-        net.add_layer(LogisticDenseLayer, num_units=4)
+        net.add_layer(LogisticDenseLayer, num_units=512)
+        net.add_layer(LogisticDenseLayer, num_units=256)
         net.add_layer(LogisticDenseLayer, num_units=1)
 
-        ar = AnimationRender("data/abalone.mp4")
-        ar.start()
-
-        class MyTrainer(Renormalize, RPROPMinus, EarlyStopping, BackpropagationTrainer, History, FullBatchTrainer):
-            def on_new_best(self, old_best, new_best):
-                super(MyTrainer, self).on_new_best(old_best, new_best)
-
-
-            def train_step(self, *args, **kwargs):
-                super(MyTrainer, self).train_step(*args, **kwargs)
-                if self.steps % 10 == 0: # only every 10th frame gets drawn
-                    ar.add_frame(self.network.download())
-
+        class MyTrainer(RPROPMinus, EarlyStopping, BackpropagationTrainer, History, FullBatchTrainer):
+            pass
 
         trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt))
-        trainer.parameters['l2_decay'] = 0.0001
         net.reset()
-        trainer.train()
-        ar.join()
+
+        np_weights = net.download()
+
+        for (w,b) in np_weights:
+            plot_weight_matrix(w, b)
