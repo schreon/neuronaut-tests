@@ -14,10 +14,12 @@ from neuro.training import SGDTrainer
 from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
 from neuro.dense import DenseLayer
+from plot_weights import AnimationRender
 import mnist
 
 
 logging.basicConfig(level=logging.INFO)
+
 
 class Test(unittest.TestCase):
 
@@ -60,9 +62,17 @@ class Test(unittest.TestCase):
         net.add_layer(LogisticDenseLayer, num_units=256)
         net.add_layer(SoftmaxDenseLayer, num_units=10)
 
+        ar = AnimationRender("data/mnist.webm")
+        ar.start()
+
         class MyTrainer(RMSProp, EarlyStopping, BackpropagationTrainer, History, SGDTrainer):
-            pass
+            def train_step(self, *args, **kwargs):
+                super(MyTrainer, self).train_step(*args, **kwargs)
+                if self.steps % 10 == 0: # only every 10th frame gets drawn
+                    ar.add_frame(self.network.download())
 
         trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt))
         net.reset()
         trainer.train()
+        ar.join()
+

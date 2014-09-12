@@ -6,25 +6,8 @@ import logging
 
 from PIL import Image
 
-green_purple = brewer2mpl.get_map('PRGn', 'diverging', 11).mpl_colormap
-colornorm = Normalize(vmin=-6, vmax=6)
-colormap = ScalarMappable(norm=colornorm, cmap=green_purple).to_rgba
-
-def array2colors(array):
-    return numpy.uint8(colormap(array)*255)
-
-def colors2image(colors, scale):
-    colors = numpy.repeat(numpy.repeat(colors, scale, axis=1), scale, axis=0)
-    return Image.fromarray(colors)
-
-def weights_to_square(w):
-    w = w.ravel()
-    k = len(w)
-    m = int(numpy.ceil(numpy.sqrt(k)))
-    nw = numpy.empty((m**2,))
-    nw[:] = numpy.nan
-    nw[:k] = w
-    return nw.reshape(m,m)
+my_colormap = brewer2mpl.get_map('PiYG', 'diverging', 11).mpl_colormap
+my_colormap.set_bad('#6ECFF6', 1.0)
 
 class WeightsPlotter(object):
     def __init__(self, scale=10):
@@ -36,20 +19,18 @@ class WeightsPlotter(object):
 
         if self.canvas is None:
             height = max([w.shape[0] for w in weights])
-            width = numpy.sum([w.shape[1] for w in weights]) + 5*len(weights)
-            self.canvas = numpy.empty((height, width, 4), dtype=numpy.uint8)
+            width = numpy.sum([w.shape[1] for w in weights]) + 2*(len(weights)-1)
+            self.canvas = numpy.empty((height, width), dtype=numpy.float32)
             self.canvas[:] = numpy.nan
 
         off_x = 0
         for i, w in enumerate(weights):
             width = w.shape[1]
             height = w.shape[0]
-            self.canvas[:height,off_x:off_x+width] = array2colors(w)
-            off_x += width + 5
+            self.canvas[:height,off_x:off_x+width] = w
+            off_x += width + 2
 
         return self.canvas
-
-
 
 ###
 
@@ -75,28 +56,30 @@ class IterableQueue(object):
 
 def render_animation(file_name, queue):
     plotter = WeightsPlotter()
-    fig = plt.figure(facecolor='gray')
+    fig = plt.figure(facecolor='gray', frameon=False)
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
+    ax.axis('off')
 
     im = {}
     def update_img(array):
         array = plotter.plot_weights(array)
         if im.get('im', None) is None:
-            im['im'] = ax.imshow(array,cmap=green_purple,interpolation='nearest', vmin=-6.0, vmax=6.0)
-            im['im'].set_clim([0, 1])
-            fig.set_size_inches([19.20, 10.80])
-            tight_layout()
+            im['im'] = ax.imshow(array, cmap=my_colormap, interpolation='nearest', vmin=-6.0, vmax=6.0)
+            #im['im'].set_clim([0, 1])
+            aspect = array.shape[0] / float(array.shape[1])
+            fig.set_size_inches([7.2, 7.2*aspect]) # 720 pixels wide, fit height
+            fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
         im['im'].set_data(array)
         return im['im']
 
     #legend(loc=0)
     ani = animation.FuncAnimation(fig,update_img, frames=IterableQueue(queue))
-    writer = animation.writers['ffmpeg'](fps=30, bitrate=27*1024)
+    #writer = animation.writers['ffmpeg'](fps=30, bitrate=27*1024)
 
-    ani.save(file_name, writer=writer, extra_args=['-vcodec', 'libx264'])
+    ani.save(file_name, fps=30, extra_args=['-vcodec', 'libvpx', '-threads', '4', '-b:v', '1M'])
 
 class AnimationRender(Process):
         def __init__(self, file_name):

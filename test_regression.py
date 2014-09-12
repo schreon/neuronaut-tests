@@ -15,6 +15,7 @@ import abalone
 from neuro.weightdecay import Renormalize
 import numpy
 from plot_weights import WeightsPlotter, AnimationRender
+import json
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,7 +25,9 @@ class Test(unittest.TestCase):
     def testRegression(self):
         ctx = CUDAContext()
 
-        inp, targ, inpt, targt = ctx.upload(*abalone.get_patterns())
+        inp, targ, inpt, targt, minimum, maximum = abalone.get_patterns()
+        inp, targ, inpt, targt = ctx.upload(inp, targ, inpt, targt)
+
         logging.info(inp.shape)
         logging.info(targ.shape)
 
@@ -43,10 +46,10 @@ class Test(unittest.TestCase):
         net.add_layer(LogisticDenseLayer, num_units=4)
         net.add_layer(LogisticDenseLayer, num_units=1)
 
-        ar = AnimationRender("data/abalone.mp4")
+        ar = AnimationRender("data/abalone.webm")
         ar.start()
 
-        class MyTrainer(Renormalize, RPROPMinus, EarlyStopping, BackpropagationTrainer, History, FullBatchTrainer):
+        class MyTrainer(Renormalize, RPROPMinus, BackpropagationTrainer, History, FullBatchTrainer):
             def on_new_best(self, old_best, new_best):
                 super(MyTrainer, self).on_new_best(old_best, new_best)
 
@@ -62,3 +65,8 @@ class Test(unittest.TestCase):
         net.reset()
         trainer.train()
         ar.join()
+
+        with open('data/abalone.json', 'wb') as fp:
+            hist = trainer.errors['history']['test']
+            hist = zip(range(1,len(hist)*trainer.validation_frequency+1, trainer.validation_frequency), hist)
+            json.dump(hist, fp)
