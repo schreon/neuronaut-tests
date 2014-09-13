@@ -21,6 +21,9 @@
       background: #FFFFFF;
    }
 
+        .seeker {
+            width: 100%;
+        }
     </style>
   </head>
   <body ng-controller="MainController">
@@ -52,14 +55,77 @@
               </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-              <li class="active"><a href="./">Default</a></li>
-              <li><a href="../navbar-static-top/">Static top</a></li>
-              <li><a href="../navbar-fixed-top/">Fixed top</a></li>
+              <li><p class="navbar-text">neuronaut-report</p></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div><!--/.container-fluid -->
       </div>
         <div ng-if="data != undefined">
+            <div class="col-lg-6">
+                <table class="table table-hover">
+                    <caption>Dataset</caption>
+                    <tbody>
+                        <tr>
+                            <td>Dataset Name</td>
+                            <td>{{ data.filename }}</td>
+                        </tr>
+                        <tr>
+                            <td>Task</td>
+                            <td>{{ data.task }}</td>
+                        </tr>
+                        <tr>
+                            <td># Attributes </td>
+                            <td>{{ data.num_attributes }}</td>
+                        </tr>
+                        <tr>
+                            <td># Targets </td>
+                            <td>{{ data.num_targets }}</td>
+                        </tr>
+                        <tr>
+                            <td># Training Patterns</td>
+                            <td>{{ data.num_training_patterns }}</td>
+                        </tr>
+                        <tr>
+                            <td># Test Patterns</td>
+                            <td>{{ data.num_test_patterns }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-lg-6">
+                <table class="table table-hover">
+                    <caption>Network Layers</caption>
+                    <thead>
+                      <tr>
+                         <th>#</th>
+                         <th># Neurons</th>
+                         <th># Function</th>
+                      </tr>
+                   </thead>
+                    <tbody>
+                        <tr ng-repeat="layer in data.layers">
+                            <td>Task</td>
+                            <td>{{ layer.num_neurons }}</td>
+                            <td>{{ layer.function }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-lg-6">
+                <table class="table table-hover">
+                    <caption>Summary</caption>
+                    <tbody>
+                        <tr>
+                            <td>Steps needed</td>
+                            <td>{{ layer.num_steps }}</td>
+                        </tr>
+                        <tr>
+                            <td>Best Test Error</td>
+                            <td>{{ layer.best_error }} at step {{ layer.best_step }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             <hr/>
             <div>
                 <nvd3-line-chart
@@ -79,25 +145,34 @@
             <div class="panel panel-default">
                 <div class="panel-body">
                     <div class="form-inline">
-                        <div class="input-group col-lg-2">
-                          <span class="input-group-btn">
-                            <button class="btn btn-primary" ng-click="currentStep=0; playing=true;" ng-show="!playing">Play</button>
-                            <button class="btn btn-danger" ng-click="playing=false;" ng-show="playing">Stop</button>
-                          </span>
-                          <input type="number" ng-model="state.currentStep" class="form-control">
-                        </div><!-- /input-group -->
-                        <div class="input-group col-lg-9">
-                            <seeker min="0" max="state.num_steps" value="state.currentStep" ></seeker>
-                        </div>
+                            <div class="input-group">
+                                <button class="btn btn-primary" ng-click="currentStep=0; playing=true;" ng-show="!playing"><span class="glyphicon glyphicon-play"></span></button>
+                                <button class="btn btn-danger" ng-click="playing=false;" ng-show="playing"><span class="glyphicon glyphicon-pause"></span></button>
+                            </div>
+
+                            <div class="input-group col-lg-6">
+                                <seeker min="0" max="state.num_steps" value="state.currentStep" class="form-control"></seeker>
+                            </div>
+
+                            <div class="input-group">
+                              <div class="input-group-addon">Step</div>
+                              <input type="number" ng-model="state.currentStep" class="form-control">
+                            </div><!-- /input-group -->
+
+
+                            <div class="input-group">
+                              <div class="input-group-addon">RMSE</div>
+                              <span class="form-control uneditable-input">{{ state.currentRMSE }}</span>
+                            </div>
                     </div>
                 </div>
-
             </div>
 
             <div ng-init="tab='weights'">
                 <ul class="nav nav-tabs" >
                   <li ng-class="{active: tab=='weights'}" ng-click="tab='weights'"><a>Weights</a></li>
                   <li ng-class="{active: tab=='gradients'}" ng-click="tab='gradients'"><a>Gradients</a></li>
+                  <li ng-class="{active: tab=='confusion'}" ng-click="tab='confusion'"><a>Confusion</a></li>
                 </ul>
                 <div ng-show="tab == 'weights'">
                     <video id="video" preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="training.webm"></video>
@@ -106,8 +181,6 @@
           </div>
       </div>
     </div>
-
-  <script type="application/json" id="data">${data}</script>
 
   <script src="../scripts/angular.min.js"></script>
   <script src="../scripts/d3.min.js"></script>
@@ -141,6 +214,10 @@
             "values" : $scope.data['history']
         }]
 
+        $scope.$watch("state.currentStep", function() {
+           var idx = Math.min(Math.ceil($scope.state.currentStep / 5), $scope.data.history.length-1);
+           $scope.state.currentRMSE = $scope.data.history[idx][1].toFixed(4);
+        });
         $scope.ylims = function() {
             return findLimits($scope.data['history']);
         }
@@ -156,7 +233,8 @@
             return function(key, x, y, e, graph) {
                 var step = Math.round(e.point[0]);
                 return  '<b>'+key+'</b>' +
-                    '<p>' + y + ' at ' + x + '</p>'
+                    '<p>' + y + ' at step ' + x + '</p>'
+                    +'<p><i>click to seek here</i></p>'
             }
         }
 
@@ -226,7 +304,7 @@
                         console.log("playing " + newVal);
                         if (newVal) {
                             clearInterval(heartBeat);
-                            heartBeat = setInterval(updateFrame, scope.frameRate);
+                            heartBeat = setInterval(updateFrame, 1000.0 / scope.frameRate);
                         } else {
                             clearInterval(heartBeat);
                         }
@@ -248,7 +326,7 @@
 
     app.directive('seeker', function ($window) {
         return {
-            template: '<input type="range"/>',
+            template: '<input style="width:100%" type="range"/>',
             scope: {
                 value: "=",
                 max: "=",
@@ -278,5 +356,6 @@
         }
     });
   </script>
+  <script type="application/json" id="data">${data}</script>
   </body>
 </html>​
