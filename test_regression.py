@@ -15,7 +15,7 @@ from neuro.stopping import EarlyStopping
 import abalone
 from neuro.weightdecay import Renormalize
 import numpy
-from plot_weights import WeightsPlotter, AnimationRender
+from plot_weights import WeightsPlotter, AnimationRender, render_confusion
 import json
 import time
 import os
@@ -55,25 +55,35 @@ class Test(unittest.TestCase):
         net.add_layer(LogisticDenseLayer, num_units=1)
 
         ar = AnimationRender(os.path.join(dir_name, vid_name))
+        gr = AnimationRender(os.path.join(dir_name, "step_sizes.webm"), vmin=0.00000001, vmax=0.01, divergent=False)
+        cr = AnimationRender(os.path.join(dir_name, "confusion.webm"), vmin=minimum, vmax=maximum, render_function=render_confusion, array_shape=targt.shape)
         ar.start()
+        gr.start()
+        cr.start()
+
+        expected = targt.get()
 
         class MyTrainer(Renormalize, EarlyStopping, History, RPROPMinus, BackpropagationTrainer, FullBatchTrainer):
             def on_new_best(self, old_best, new_best):
                 super(MyTrainer, self).on_new_best(old_best, new_best)
 
-
             def train_step(self, *args, **kwargs):
                 super(MyTrainer, self).train_step(*args, **kwargs)
                 if self.steps % 10 == 0: # only every 10th frame gets drawn
                     ar.add_frame(self.network.download())
+                    gradients = [(layer.step_sizes[0].get(), layer.step_sizes[1].get()) for layer in self.training_state.layers]
+                    gr.add_frame(gradients)
+                    cr.add_frame((expected, self.test_state.layers[-1].activations.get()))
 
         trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt), l2_day=0.0001)
         net.reset()
         trainer.train()
         ar.join()
+        gr.join()
+        cr.join()
 
         hist = trainer.errors['history']['test']
-        hist = zip(range(1,len(hist)*trainer.validation_frequency+1, trainer.validation_frequency), hist)
+        hist = zip(range(1, len(hist)*trainer.validation_frequency+1, trainer.validation_frequency), hist)
 
         logging.info(trainer.parameters)
         data = dict(history=hist, filename="abalone", time=time.asctime(), parameters=trainer.parameters)

@@ -6,9 +6,6 @@ import logging
 
 from PIL import Image
 
-my_colormap = brewer2mpl.get_map('PiYG', 'diverging', 11).mpl_colormap
-my_colormap.set_bad('#6ECFF6', 1.0)
-
 class WeightsPlotter(object):
     def __init__(self, scale=10):
         self.scale = scale
@@ -34,8 +31,6 @@ class WeightsPlotter(object):
 
 ###
 
-import matplotlib.animation as animation
-from pylab import *
 from multiprocessing import Process, Queue
 
 class IterableQueue(object):
@@ -53,8 +48,37 @@ class IterableQueue(object):
     def __len__(self):
         return 999999999999999 # workaround ...
 
+def render_confusion(file_name, queue, vmin, vmax, divergent, array_shape):
+    from pylab import plt
+    import matplotlib.animation as animation
+    plt.close()
+    fig = plt.figure()
 
-def render_animation(file_name, queue):
+    def update_img((expected, output)):
+        plt.cla()
+        plt.ylim((vmin, vmin+vmax))
+        plt.xlim((vmin, vmin+vmax))
+        ax = fig.add_subplot(111)
+        plt.plot([vmin, vmin+vmax], [vmin, vmin+vmax])
+        ax.grid(True)
+        plt.xlabel("expected output")
+        plt.ylabel("network output")
+        plt.legend()
+
+        expected = expected*vmax + vmin
+        output = output*vmax + vmin
+        #scat.set_offsets((expected, output))
+        scat = ax.scatter(expected, output)
+        return scat
+
+    ani = animation.FuncAnimation(fig, update_img, frames=IterableQueue(queue))
+
+    ani.save(file_name, fps=30, extra_args=['-vcodec', 'libvpx', '-threads', '4', '-b:v', '1M'])
+
+def render_weights(file_name, queue, vmin, vmax, divergent, array_shape):
+    from pylab import plt
+    import matplotlib.animation as animation
+
     plotter = WeightsPlotter()
     fig = plt.figure(facecolor='gray', frameon=False)
     ax = fig.add_subplot(111)
@@ -63,14 +87,21 @@ def render_animation(file_name, queue):
     ax.get_yaxis().set_visible(False)
     ax.axis('off')
 
+
+    if divergent:
+        my_colormap = brewer2mpl.get_map('PiYG', 'diverging', 11).mpl_colormap
+    else:
+        my_colormap = brewer2mpl.get_map('OrRd', 'sequential', 9).mpl_colormap
+
+    my_colormap.set_bad('#6ECFF6', 1.0)
+
     im = {}
     def update_img(array):
         array = plotter.plot_weights(array)
         if im.get('im', None) is None:
-            im['im'] = ax.imshow(array, cmap=my_colormap, interpolation='nearest', vmin=-6.0, vmax=6.0)
-            #im['im'].set_clim([0, 1])
+            im['im'] = ax.imshow(array, cmap=my_colormap, interpolation='nearest', vmin=vmin, vmax=vmax)
             aspect = array.shape[0] / float(array.shape[1])
-            fig.set_size_inches([7.2, 7.2*aspect]) # 720 pixels wide, fit height
+            fig.set_size_inches([7.2, 7.2*aspect]) # 720 pixels wide, variable height
             fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
         im['im'].set_data(array)
         return im['im']
@@ -82,9 +113,9 @@ def render_animation(file_name, queue):
     ani.save(file_name, fps=30, extra_args=['-vcodec', 'libvpx', '-threads', '4', '-b:v', '1M'])
 
 class AnimationRender(Process):
-        def __init__(self, file_name):
+        def __init__(self, file_name, vmin=-6.0, vmax=6.0, divergent=True, render_function=render_weights, array_shape=()):
             self.queue = Queue(maxsize=100)
-            super(AnimationRender, self).__init__(target=render_animation, args=(file_name, self.queue))
+            super(AnimationRender, self).__init__(target=render_function, args=(file_name, self.queue, vmin, vmax, divergent, array_shape))
 
         def add_frame(self, frame):
             self.queue.put(frame)

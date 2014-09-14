@@ -65,29 +65,9 @@
                 <table class="table table-hover">
                     <caption>Dataset</caption>
                     <tbody>
-                        <tr>
-                            <td>Dataset Name</td>
-                            <td>{{ data.filename }}</td>
-                        </tr>
-                        <tr>
-                            <td>Task</td>
-                            <td>{{ data.task }}</td>
-                        </tr>
-                        <tr>
-                            <td># Attributes </td>
-                            <td>{{ data.num_attributes }}</td>
-                        </tr>
-                        <tr>
-                            <td># Targets </td>
-                            <td>{{ data.num_targets }}</td>
-                        </tr>
-                        <tr>
-                            <td># Training Patterns</td>
-                            <td>{{ data.num_training_patterns }}</td>
-                        </tr>
-                        <tr>
-                            <td># Test Patterns</td>
-                            <td>{{ data.num_test_patterns }}</td>
+                        <tr ng-repeat="(key, val) in data.description">
+                            <td>{{ key }}</td>
+                            <td>{{ val }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -97,16 +77,12 @@
                     <caption>Network Layers</caption>
                     <thead>
                       <tr>
-                         <th>#</th>
-                         <th># Neurons</th>
-                         <th># Function</th>
+                        <th ng-repeat="(key, val) in data.layers[0]">{{ key }}</th>
                       </tr>
                    </thead>
                     <tbody>
                         <tr ng-repeat="layer in data.layers">
-                            <td>Task</td>
-                            <td>{{ layer.num_neurons }}</td>
-                            <td>{{ layer.function }}</td>
+                            <td ng-repeat="(key, val) in layer">{{ val }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -115,13 +91,9 @@
                 <table class="table table-hover">
                     <caption>Summary</caption>
                     <tbody>
-                        <tr>
-                            <td>Steps needed</td>
-                            <td>{{ layer.num_steps }}</td>
-                        </tr>
-                        <tr>
-                            <td>Best Test Error</td>
-                            <td>{{ layer.best_error }} at step {{ layer.best_step }}</td>
+                        <tr ng-repeat="(key, val) in data.summary">
+                            <td>{{ key }}</td>
+                            <td>{{ val }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -156,7 +128,7 @@
 
                             <div class="input-group">
                               <div class="input-group-addon">Step</div>
-                              <input type="number" ng-model="state.currentStep" class="form-control">
+                              <input type="number" ng-model="state.currentStep" step="5" class="form-control">
                             </div><!-- /input-group -->
 
 
@@ -171,11 +143,17 @@
             <div ng-init="tab='weights'">
                 <ul class="nav nav-tabs" >
                   <li ng-class="{active: tab=='weights'}" ng-click="tab='weights'"><a>Weights</a></li>
-                  <li ng-class="{active: tab=='gradients'}" ng-click="tab='gradients'"><a>Gradients</a></li>
+                  <li ng-class="{active: tab=='updates'}" ng-click="tab='updates'"><a>Updates</a></li>
                   <li ng-class="{active: tab=='confusion'}" ng-click="tab='confusion'"><a>Confusion</a></li>
                 </ul>
                 <div ng-show="tab == 'weights'">
-                    <video id="video" preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="training.webm"></video>
+                    <video preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="training.webm"></video>
+                </div>
+                <div ng-show="tab == 'updates'">
+                    <video preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="step_sizes.webm"></video>
+                </div>
+                <div ng-show="tab == 'confusion'">
+                    <video preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="confusion.webm"></video>
                 </div>
             </div>
           </div>
@@ -198,11 +176,11 @@
         }
         return [mi, ma];
     }
-    ////////////// Angular       
+    ////////////// Angular
     function MainController($scope) {
 
         $scope.data = JSON.parse(document.getElementById("data").innerHTML);
-
+        $scope.data.layers = [{'#neurons' : 32, 'function' : 'logistic'}, {'#neurons' : 16, 'function' : 'logistic'}, {'#neurons' : 1, 'function' : 'logistic'}]
         $scope.state = {
             currentStep : 0,
             playing: false,
