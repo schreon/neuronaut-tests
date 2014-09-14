@@ -13,7 +13,7 @@ from neuro.training import FullBatchTrainer
 from neuro.stopping import EarlyStopping
 import abalone
 import numpy
-from plot_weights import plot_weight_matrix
+from neuronaut_plot import plot_weight_matrix
 
 logging.basicConfig(level=logging.INFO)
 

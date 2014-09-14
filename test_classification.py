@@ -14,7 +14,7 @@ from neuro.training import SGDTrainer
 from neuro.rmsprop import RMSProp
 from neuro.stopping import EarlyStopping
 from neuro.dense import DenseLayer
-from plot_weights import AnimationRender
+from neuronaut_plot import AnimationRender
 import mnist
 
 
