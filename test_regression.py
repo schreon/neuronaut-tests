@@ -18,6 +18,7 @@ import numpy
 from plot_weights import WeightsPlotter, AnimationRender, render_confusion
 import json
 import time
+import datetime
 import os
 from mako.template import Template
 
@@ -50,8 +51,8 @@ class Test(unittest.TestCase):
         class LogisticDenseLayer(Logistic, DenseLayer):
             pass
 
-        net.add_layer(LogisticDenseLayer, num_units=32)
-        net.add_layer(LogisticDenseLayer, num_units=16)
+        net.add_layer(LogisticDenseLayer, num_units=128)
+        net.add_layer(LogisticDenseLayer, num_units=128)
         net.add_layer(LogisticDenseLayer, num_units=1)
 
         ar = AnimationRender(os.path.join(dir_name, vid_name))
@@ -63,7 +64,7 @@ class Test(unittest.TestCase):
 
         expected = targt.get()
 
-        class MyTrainer(Renormalize, EarlyStopping, History, RPROPMinus, BackpropagationTrainer, FullBatchTrainer):
+        class MyTrainer(History, RPROPMinus, BackpropagationTrainer, FullBatchTrainer):
             def on_new_best(self, old_best, new_best):
                 super(MyTrainer, self).on_new_best(old_best, new_best)
 
@@ -75,9 +76,12 @@ class Test(unittest.TestCase):
                     gr.add_frame(gradients)
                     cr.add_frame((expected, self.test_state.layers[-1].activations.get()))
 
-        trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt), l2_day=0.0001)
+        trainer = MyTrainer(network=net, training_data=(inp, targ), test_data=(inpt, targt), l2_decay=0.0001, min_steps=10000)
         net.reset()
+        start_time = time.time()
         trainer.train()
+        end_time = time.time()
+        time_taken = end_time - start_time
         ar.join()
         gr.join()
         cr.join()
@@ -85,9 +89,31 @@ class Test(unittest.TestCase):
         hist = trainer.errors['history']['test']
         hist = zip(range(1, len(hist)*trainer.validation_frequency+1, trainer.validation_frequency), hist)
 
-        logging.info(trainer.parameters)
-        data = dict(history=hist, filename="abalone", time=time.asctime(), parameters=trainer.parameters)
+        description = {
+            '#Training Patterns' : inp.shape[0],
+            '#Test Patterns' : inpt.shape[0],
+            '#Attributes' : inp.shape[1],
+            '#Targets' : targ.shape[1],
+            'Task' : 'Regression'
+        }
+
+        layers = [{
+            'Neurons' : layer.output_shape,
+            'Type' : type(layer).__name__
+        } for layer in net.layers]
+
+        summary = {
+            '#Total Steps' : len(hist),
+            'Best Test Error' : trainer.errors['best']['test'],
+            'Best Step' : trainer.best_step,
+            'Seconds taken' : time_taken,
+            'Steps/Second' : trainer.steps_per_sec
+        }
+
+        trainer_classes = [cls.__name__ for cls in trainer.__class__.__bases__]
+        data = dict(history=hist, trainer_classes=trainer_classes, dataset_name="abalone", summary=summary, layers=layers, description=description, dataset_url="https://archive.ics.uci.edu/ml/datasets/Abalone", time=time.asctime(), parameters=trainer.parameters)
         data_string = json.dumps(data)
+
         html = Template(filename="neuronaut-report.html", input_encoding='utf-8').render(data=data_string)
         with open(os.path.join(dir_name, "report.html"), "wb") as f:
             f.write(html.encode('utf-8'))

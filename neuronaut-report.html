@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html ng-app="neuronautReport">
+<html ng-app="neuronautReport" ng-controller="MainController">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,80 +25,108 @@
             width: 100%;
         }
     </style>
+  <title>{{data.dataset_name}} - neuronaut-report</title>
   </head>
-  <body ng-controller="MainController">
+  <body >
     <div class="container">
-      <div class="row">
 
- <!-- Static navbar -->
-      <div class="navbar navbar-default" role="navigation">
-        <div class="container-fluid">
-          <div class="navbar-header">
-            <a class="navbar-brand" href="#">neuronaut-report</a>
-          </div>
-          <div class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-              <li class="active"><a href="#">Link</a></li>
-              <li><a href="#">Link</a></li>
-              <li><a href="#">Link</a></li>
-              <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <span class="caret"></span></a>
-                <ul class="dropdown-menu" role="menu">
-                  <li><a href="#">Action</a></li>
-                  <li><a href="#">Another action</a></li>
-                  <li><a href="#">Something else here</a></li>
-                  <li class="divider"></li>
-                  <li class="dropdown-header">Nav header</li>
-                  <li><a href="#">Separated link</a></li>
-                  <li><a href="#">One more separated link</a></li>
+      <div class="row">
+          <!-- Static navbar -->
+          <div class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+              <div class="navbar-header">
+                <a class="navbar-brand" href="#">neuronaut-report</a>
+              </div>
+                <ul class="nav navbar-nav navbar-right">
+                  <li><a target="_blank" ng-href="{{ data.dataset_url }}">Dataset: {{ data.dataset_name }} <span class="glyphicon glyphicon-link"></span></a></li>
                 </ul>
-              </li>
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-              <li><p class="navbar-text">neuronaut-report</p></li>
-            </ul>
-          </div><!--/.nav-collapse -->
-        </div><!--/.container-fluid -->
+            </div><!--/.container-fluid -->
+          </div>
       </div>
-        <div ng-if="data != undefined">
-            <div class="col-lg-6">
-                <table class="table table-hover">
-                    <caption>Dataset</caption>
-                    <tbody>
-                        <tr ng-repeat="(key, val) in data.description">
-                            <td>{{ key }}</td>
-                            <td>{{ val }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-lg-6">
-                <table class="table table-hover">
-                    <caption>Network Layers</caption>
-                    <thead>
-                      <tr>
-                        <th ng-repeat="(key, val) in data.layers[0]">{{ key }}</th>
-                      </tr>
-                   </thead>
-                    <tbody>
-                        <tr ng-repeat="layer in data.layers">
-                            <td ng-repeat="(key, val) in layer">{{ val }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-lg-6">
-                <table class="table table-hover">
-                    <caption>Summary</caption>
-                    <tbody>
-                        <tr ng-repeat="(key, val) in data.summary">
-                            <td>{{ key }}</td>
-                            <td>{{ val }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+
+        <div ng-if="data != undefined" class="row">
+            <div class="span12">
+            <div class="row">
+                <div class="col-lg-6">
+                    <table class="table table-hover">
+                        <caption>Dataset</caption>
+                        <thead>
+                          <tr>
+                            <th>Property</th>
+                            <th>Value</th>
+                          </tr>
+                       </thead>
+                        <tbody>
+                            <tr ng-repeat="(key, val) in data.description">
+                                <td>{{ key }}</td>
+                                <td>{{ val }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <table class="table table-hover">
+                        <caption>Network Layers</caption>
+                        <thead>
+                          <tr>
+                            <th ng-repeat="(key, val) in data.layers[0]">{{ key }}</th>
+                          </tr>
+                       </thead>
+                        <tbody>
+                            <tr ng-repeat="layer in data.layers">
+                                <td ng-repeat="(key, val) in layer">{{ val }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <hr/>
+            <div class="row">
+                <div class="col-lg-6">
+                    <table class="table table-hover">
+                        <caption>Training Parameters</caption>
+                        <thead>
+                          <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                          </tr>
+                       </thead>
+                        <tbody>
+                            <tr><td>Classes</td><td><span ng-repeat="cls in data.trainer_classes">{{cls}}, </span></td></tr>
+                            <tr ng-repeat="(key, val) in data.parameters">
+                                <td>{{ key }}</td>
+                                <td>{{ val | number : 4 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <table class="table table-hover">
+                        <caption>Summary</caption>
+                        <thead>
+                          <tr>
+                            <th>Property</th>
+                            <th>Value</th>
+                          </tr>
+                       </thead>
+                        <tbody>
+                            <tr ng-repeat="(key, val) in data.summary">
+                                <td>{{ key }}</td>
+                                <td>{{ val | number : 4 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="page-header">
+                <h1>Visualization <small>of the training progression, weight matrices, etc.</small></h1>
+            </div>
+
+            <blockquote>Use the controls below the RMSE graph to step through the training progression. Click into the graph to directly seek to points of interest.</blockquote>
             <div>
                 <nvd3-line-chart
                     id="rmse_chart"
@@ -147,13 +175,13 @@
                   <li ng-class="{active: tab=='confusion'}" ng-click="tab='confusion'"><a>Confusion</a></li>
                 </ul>
                 <div ng-show="tab == 'weights'">
-                    <video preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="training.webm"></video>
+                    <video preload="auto" neuronaut-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="training.webm"></video>
                 </div>
                 <div ng-show="tab == 'updates'">
-                    <video preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="step_sizes.webm"></video>
+                    <video preload="auto" neuronaut-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="step_sizes.webm"></video>
                 </div>
                 <div ng-show="tab == 'confusion'">
-                    <video preload="auto" rmse-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="confusion.webm"></video>
+                    <video preload="auto" neuronaut-video current-frame="state.currentStep" oncontextmenu="return false;" playing="playing" type="video/webm" src="confusion.webm"></video>
                 </div>
             </div>
           </div>
@@ -180,7 +208,6 @@
     function MainController($scope) {
 
         $scope.data = JSON.parse(document.getElementById("data").innerHTML);
-        $scope.data.layers = [{'#neurons' : 32, 'function' : 'logistic'}, {'#neurons' : 16, 'function' : 'logistic'}, {'#neurons' : 1, 'function' : 'logistic'}]
         $scope.state = {
             currentStep : 0,
             playing: false,
@@ -222,11 +249,11 @@
             }
         }
     }
-    
+
     var app = angular.module('neuronautReport', ['nvd3ChartDirectives']);
     app.controller("MainController", ["$scope", MainController]);
 
-    app.directive('rmseVideo', function ($window, $timeout) {
+    app.directive('neuronautVideo', function ($window, $timeout) {
         return {
             scope: {
                 currentFrame: "=",
